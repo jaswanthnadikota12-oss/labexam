@@ -1,0 +1,341 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Commerce Website</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            text-align: center;
+        }
+
+        header {
+            background: #2563eb;
+            color: white;
+            padding: 18px;
+        }
+
+        .box {
+            background: white;
+            width: 320px;
+            max-width: 85%;
+            margin: 35px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #ccc;
+        }
+
+        input {
+            width: 90%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 10px 16px;
+            margin: 8px;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        a {
+            color: #2563eb;
+            cursor: pointer;
+        }
+
+        #message {
+            color: #dc2626;
+        }
+
+        #loginSuccess {
+            color: #16a34a;
+        }
+
+        #products {
+            padding: 20px;
+        }
+
+        #productList {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .product {
+            background: white;
+            padding: 20px;
+            width: 220px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #ccc;
+        }
+
+        .product h3 {
+            color: #2563eb;
+        }
+
+        #products, #signupBox {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>My E-Commerce Store</h1>
+    </header>
+
+    <!-- Login Form -->
+    <div class="box" id="loginBox">
+        <h2>Login</h2>
+
+        <form id="loginForm">
+            <input type="email" id="loginEmail"
+                   placeholder="Email" required>
+
+            <input type="password" id="loginPassword"
+                   placeholder="Password" required>
+
+            <button type="submit">Login</button>
+        </form>
+
+        <p id="message" role="alert"></p>
+
+        <p>New user?
+            <a id="showSignup">Sign Up</a>
+        </p>
+    </div>
+
+    <!-- Signup Form -->
+    <div class="box" id="signupBox">
+        <h2>Create Account</h2>
+
+        <form id="signupForm">
+            <input type="text" id="name"
+                   placeholder="Full Name" required>
+
+            <input type="email" id="email"
+                   placeholder="Email" required>
+
+            <input type="password" id="password"
+                   placeholder="Password (min 6 characters)"
+                   minlength="6" required>
+
+            <button type="submit">Sign Up</button>
+        </form>
+
+        <p id="signupMessage" role="alert"></p>
+
+        <p>Already registered?
+            <a id="showLogin">Login</a>
+        </p>
+    </div>
+
+    <!-- Product Section: Hidden until login -->
+    <section id="products">
+        <h2>Welcome, <span id="userName"></span>!</h2>
+        <p id="loginSuccess" role="status"></p>
+        <button id="logout">Logout</button>
+        <h2>Available Products</h2>
+        <div id="productList"></div>
+    </section>
+
+    <script>
+        // Storage keys
+        const USERS_KEY = "users";
+        const SESSION_KEY = "activeUser";
+
+        // Sample products
+        const items = [
+            {
+                name: "Laptop",
+                price: 50000,
+                description: "Powerful laptop for study and work."
+            },
+            {
+                name: "Smartphone",
+                price: 20000,
+                description: "A stylish phone with great features."
+            },
+            {
+                name: "Headphones",
+                price: 1500,
+                description: "Enjoy music with clear sound."
+            },
+            {
+                name: "Smart Watch",
+                price: 3000,
+                description: "Track your daily activities."
+            }
+        ];
+
+        // Get users from Local Storage
+        function getUsers() {
+            return JSON.parse(localStorage.getItem(USERS_KEY)) || [];
+        }
+
+        // Toggle between login and signup
+        function showView(view) {
+            document.getElementById("loginBox").style.display =
+                view === "login" ? "block" : "none";
+
+            document.getElementById("signupBox").style.display =
+                view === "signup" ? "block" : "none";
+
+            document.getElementById("products").style.display = "none";
+            document.getElementById("message").textContent = "";
+            document.getElementById("signupMessage").textContent = "";
+        }
+
+        document.getElementById("showSignup").onclick = function () {
+            showView("signup");
+        };
+
+        document.getElementById("showLogin").onclick = function () {
+            showView("login");
+        };
+
+        // Signup: validate and save users as a JSON array
+        document.getElementById("signupForm").onsubmit = function (e) {
+            e.preventDefault();
+
+            const name = document.getElementById("name").value.trim();
+            const email = document.getElementById("email").value.trim().toLowerCase();
+            const password = document.getElementById("password").value;
+
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!name || !email || !password) {
+                document.getElementById("signupMessage").textContent =
+                    "Please fill in all fields.";
+                return;
+            }
+
+            if (!emailPattern.test(email)) {
+                document.getElementById("signupMessage").textContent =
+                    "Enter a valid email address.";
+                return;
+            }
+
+            if (password.length < 6) {
+                document.getElementById("signupMessage").textContent =
+                    "Password must contain at least 6 characters.";
+                return;
+            }
+
+            const users = getUsers();
+
+            if (users.some(user => user.email === email)) {
+                document.getElementById("signupMessage").textContent =
+                    "Email already registered. Please log in.";
+                return;
+            }
+
+            users.push({ name, email, password });
+
+            localStorage.setItem(USERS_KEY, JSON.stringify(users));
+
+            alert("Signup successful! Please log in.");
+            document.getElementById("signupForm").reset();
+            showView("login");
+        };
+
+        // Login: check credentials and create an active session
+        document.getElementById("loginForm").onsubmit = function (e) {
+            e.preventDefault();
+
+            const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+            const password = document.getElementById("loginPassword").value;
+
+            const user = getUsers().find(
+                user => user.email === email && user.password === password
+            );
+
+            if (user) {
+                localStorage.setItem(SESSION_KEY, user.email);
+                document.getElementById("loginForm").reset();
+                openProducts(user, true);
+            } else {
+                document.getElementById("message").textContent =
+                    "Invalid email or password!";
+                document.getElementById("products").style.display = "none";
+            }
+        };
+
+        // Dynamically create product elements using the DOM
+        function renderProducts() {
+            const list = document.getElementById("productList");
+            list.replaceChildren();
+
+            items.forEach(item => {
+                const card = document.createElement("div");
+                card.className = "product";
+
+                const title = document.createElement("h3");
+                title.textContent = item.name;
+
+                const price = document.createElement("p");
+                price.textContent = "Price: ₹" + item.price;
+
+                const description = document.createElement("p");
+                description.textContent = item.description;
+
+                card.append(title, price, description);
+                list.appendChild(card);
+            });
+        }
+
+        // Show products only after successful login
+        function openProducts(user, showLoginSuccess = false) {
+            document.getElementById("loginBox").style.display = "none";
+            document.getElementById("signupBox").style.display = "none";
+            document.getElementById("products").style.display = "block";
+            document.getElementById("userName").textContent = user.name;
+            document.getElementById("loginSuccess").textContent =
+                showLoginSuccess ? "Login successful!" : "";
+
+            renderProducts();
+        }
+
+        // Check active session when page loads
+        function checkSession() {
+            const email = localStorage.getItem(SESSION_KEY);
+            const user = getUsers().find(user => user.email === email);
+
+            if (email && user) {
+                openProducts(user);
+            } else {
+                localStorage.removeItem(SESSION_KEY);
+                showView("login");
+            }
+        }
+
+        // Logout: clear session and return to login
+        document.getElementById("logout").onclick = function () {
+            localStorage.removeItem(SESSION_KEY);
+            document.getElementById("productList").replaceChildren();
+            showView("login");
+        };
+
+        // Start application
+        checkSession();
+    </script>
+
+</body>
+</html>
